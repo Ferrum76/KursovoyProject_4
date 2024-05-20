@@ -15,3 +15,9 @@ class Saver(ABC):
     @abstractmethod
     def delete(self, *args, **kwargs):
         raise NotImplementedError
+    
+
+class Parser(ABC):
+    @abstractmethod
+    def get_vacancys(self, *args, **kwargs):
+        raise NotImplementedError
