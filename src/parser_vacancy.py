@@ -10,11 +10,17 @@ class ParserVacancy(Parser):
     def __repr__(self):
         return f'Data: {self.data}'
 
-    def parse_vacansys(self, params: dict) -> list[Vacancy]:
+    def parse_vacansys(self, params: dict = None) -> list[Vacancy]:
+        res = self.__creating_a_list_of_instances()
+        
         if params is not None:
             self.params = params
-        res = self.__creating_a_list_of_instances()
-        if len(self.params.get("filter_words", [])) > 0:
+
+        if self.params is None:
+            return res
+        
+        filter_words = self.params.get("filter_words") if self.params.get("filter_words") else []
+        if len(filter_words) > 0:
             res = self.__filter_vacancies(res, self.params.get("filter_words", ))
         salary_from = self.params.get("salary_from", 0)
         salary_to = self.params.get("salary_to", 0)   
@@ -182,14 +188,18 @@ class ParserVacancy(Parser):
         if isinstance(self.data, list):
             vacancies_list = []
             for item in self.data:
+                salary_from = item['salary'].get('from') if item['salary'] else 0
+                salary_to = item['salary'].get('to') if item['salary'] else 0
+                currency = item['salary'].get('currency') if item['salary'] else "RUB"
+                requirement = item['snippet'].get('requirement', 'Информация отсутствует') if item['snippet'] else 'Информация отсутствует'
                 vacancies_list.append({
                     "name": item['name'],
                     "desc": item['area']['name'],
-                    "salary_from": item.get('salary', {}).get('from', None),
-                    "salary_to": item.get('salary', {}).get('to', None),
-                    "currency": item.get('salary', {}).get('currency', 'RUB'),
+                    "salary_from": salary_from,
+                    "salary_to": salary_to,
+                    "currency": currency,
                     "link": item['area']['url'],
-                    "requirement": item.get('snippet', {}).get('requirement', 'Информация отсутствует')}
+                    "requirement": requirement}
                 )
 
             return vacancies_list

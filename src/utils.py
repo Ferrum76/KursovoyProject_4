@@ -28,11 +28,8 @@ PARAMS_ADDED = {
 }
 
 def menu():
-    return print(f'Доступные команды:
-        1. help - вызвать список команд
-        2. search - поиск вакансий
-        3. exit - выход из программы
-    ')
+    message = 'Доступные команды:\n1. help - вызвать список команд\n2. search - поиск вакансий\n3. exit - выход из программы\n'
+    return message
 
 def get_info_commands_criteria():
     print('Доступные критерии поиска:')

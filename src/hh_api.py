@@ -1,4 +1,4 @@
-from abstract_class import AbstractHH
+from .abstract_class import AbstractHH
 import requests
 
 BASE_API_HH_URL = 'https://api.hh.ru/vacancies'

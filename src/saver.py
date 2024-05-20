@@ -28,7 +28,7 @@ class JSONSaver(Saver):
             data (Any): The data json to be saved.
         """
         try:
-            with open(self.__path, 'w') as file:
+            with open(self.__path, 'w', encoding='utf-8') as file:
                 json.dump(data, file, ensure_ascii=False, indent=4)
                 file.close()
         except FileNotFoundError:
@@ -56,7 +56,7 @@ class JSONSaver(Saver):
 
         # Читаем данные из JSON
         try:
-            with open(self.__path, 'r') as file:
+            with open(self.__path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
         except FileNotFoundError:
             raise FileNotFoundError(f'File not found: {self.__path}')

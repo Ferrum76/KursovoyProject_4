@@ -21,10 +21,11 @@ def interface():
             hh = FromHHru()
             vacancies = hh.get_vacancies(user_vacancy)
 
-            pv = ParserVacancy(vacancies)
-            parse_vacansy = pv.parse_vacansys(vacancies)
+            pv = ParserVacancy(data=vacancies)
+            parse_vacansy = pv.parse_vacansys()
             saver = JSONSaver()
-            saver = saver.save(parse_vacansy)
+            res = {"items": parse_vacansy}
+            saver = saver.save(res)
 
             print(f'Найдено: {len(parse_vacansy)} вакансий по запросу "{user_vacancy}" и сохранено в файл вакансий в {saver.get_path()}')
 
@@ -73,7 +74,8 @@ def interface():
                     if sub_cmd == 'add' or sub_cmd == '8':
                         parse_vacansy = pv.parse_vacansys(params)
                         print("Фильтры добавлены применены к вакансиям")
-                        saver.save(parse_vacansy)
+                        res['items'] = parse_vacansy
+                        saver.save(res)
                         print(f'Найдено: {len(parse_vacansy)} вакансий по запросу "{user_vacancy}" и сохранено в файл вакансий в {saver.get_path()}')
                         sub_cmd = 'clear'
 
