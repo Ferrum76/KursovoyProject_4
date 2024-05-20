@@ -28,29 +28,29 @@ def test_create_parser(parser, sample_data):
     assert len(parser.list_instances) == len(sample_data)
 
 def test_filter_vacancies(parser):
-    vacancy = parser.get_vacancys(filter_words=["Python"])
+    vacancy = parser.parse_vacansys(params={"filter_words": ["Python"]})
     assert len(vacancy) == 1
     assert vacancy[0].name == "Python Developer"
 
 def test_get_vacancies_by_salary(parser):
-    vacancy = parser.get_vacancys(salary_from=150, salary_to=250)
+    vacancy = parser.parse_vacansys(params={"salary_from": 150, "salary_to": 250})
     assert vacancy[0].name == "JavaScript Developer"
     assert len(vacancy) == 2
 
 def test_sort_vacancies_from(parser):
-    vacancy = parser.get_vacancys(sort_salary_from=True)
+    vacancy = parser.parse_vacansys(params={"sort_salary_from": True})
     assert vacancy[0].name == "C++ Developer"
     assert vacancy[1].name == "Scala Developer"
     assert vacancy[2].name == "PHP Developer"
 
 def test_sort_vacancies_to(parser):
-    vacancy = parser.get_vacancys(sort_salary_to=True)
+    vacancy = parser.parse_vacansys(params={"sort_salary_to": True})
     assert vacancy[0].name == "C++ Developer"
     assert vacancy[1].name == "Scala Developer"
     assert vacancy[2].name == "PHP Developer"
 
 def test_get_top_vacancies(parser):
-    vacancy = parser.get_vacancys(top_n=5)
+    vacancy = parser.parse_vacansys(params={"top_n": 5})
     assert len(vacancy) == 5
 
 def test_create_empty_parser():
@@ -63,20 +63,20 @@ def test_invalid_data_type():
         ParserVacancy("invalid data")
 
 def test_combination_filter_and_salary(parser):
-    vacancy = parser.get_vacancys(filter_words=["Developer"], salary_from=150, salary_to=250)
+    vacancy = parser.parse_vacansys(params={"filter_words":["Developer"], "salary_from":150, "salary_to":250})
     assert len(vacancy) == 2
 
 def test_combination_filter_and_sort(parser):
-    vacancy = parser.get_vacancys(filter_words=["Developer"], sort_salary_from=True)
+    vacancy = parser.parse_vacansys(params={"filter_words":["Developer"], "sort_salary_from":True})
     assert vacancy[0].name == "C++ Developer"
 
 def test_combination_salary_and_sort(parser):
-    vacancy = parser.get_vacancys(salary_from=100, salary_to=300, sort_salary_to=True)
+    vacancy = parser.parse_vacansys(params={"salary_from":100, "salary_to":300, "sort_salary_to":True})
     assert vacancy[0].name == "Java Developer"
     assert vacancy[1].name == "Kotlin Developer"
 
 def test_combination_all_arguments(parser):
-    vacancy = parser.get_vacancys(filter_words=["Developer"], salary_from=150, salary_to=250, sort_salary_from=True, top_n=3)
+    vacancy = parser.parse_vacansys(params={"filter_words": ["Developer"], "salary_from": 150, "salary_to": 250, "sort_salary_from": True, "top_n": 3})
     assert len(vacancy) == 2
     assert vacancy[0].name == "Perl Developer"
 

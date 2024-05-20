@@ -6,10 +6,19 @@ BASE_PATH = 'data/vacancies.json'
 
 class JSONSaver(Saver):
     def __init__(self, path=BASE_PATH):
-        self.path = path
+        self.__path = path
 
     def __repr__(self):
-        return f'Path: {self.path}'
+        return f'Path: {self.__path}'
+    
+    def get_path(self) -> str:
+        """
+        Get the path of the JSON file.
+
+        Returns:
+            str: The path of the JSON file.
+        """
+        return self.__path
 
     def save(self, data):
         """
@@ -19,18 +28,18 @@ class JSONSaver(Saver):
             data (Any): The data json to be saved.
         """
         try:
-            with open(self.path, 'w') as file:
+            with open(self.__path, 'w') as file:
                 json.dump(data, file, ensure_ascii=False, indent=4)
                 file.close()
         except FileNotFoundError:
-            raise FileNotFoundError(f'File not found: {self.path}')
+            raise FileNotFoundError(f'File not found: {self.__path}')
 
-    def delete(self, id):
+    def delete(self, id=""):
         """
         Deletes a record from a JSON file based on the provided ID.
 
         Parameters:
-            id (int): The ID of the record to be deleted.
+            id (int): The ID of the record to be deleted optional.
 
         Returns:
             None
@@ -47,20 +56,22 @@ class JSONSaver(Saver):
 
         # Читаем данные из JSON
         try:
-            with open(self.path, 'r') as file:
+            with open(self.__path, 'r') as file:
                 data = json.load(file)
         except FileNotFoundError:
-            raise FileNotFoundError(f'File not found: {self.path}')
+            raise FileNotFoundError(f'File not found: {self.__path}')
 
-        
-        # Если в поле id нет нужного значения, то ничего не делаем, иначе не добавляем в новый список
-        data = [record for record in data if record.get('id') != id]
-        
+        if id is not "":
+             # Если в поле id нет нужного значения, то ничего не делаем, иначе не добавляем в новый список
+            data = [record for record in data if record.get('id') != id]
+        else: 
+            data = []
+       
         # Записываем данные в JSON
         try: 
-            with open(self.path, 'w', encoding='utf-8') as file:
+            with open(self.__path, 'w', encoding='utf-8') as file:
                 json.dump(data, file, ensure_ascii=False, indent=4)
                 file.close()
         except FileNotFoundError:
-            raise FileNotFoundError(f'File not found: {self.path}')
+            raise FileNotFoundError(f'File not found: {self.__path}')
 

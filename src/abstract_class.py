@@ -9,6 +9,9 @@ class AbstractHH(ABC):
 
 class Saver(ABC):
     @abstractmethod
+    def get_path(self, *args, **kwargs):
+        raise NotImplementedError
+    @abstractmethod
     def save(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -19,5 +22,5 @@ class Saver(ABC):
 
 class Parser(ABC):
     @abstractmethod
-    def get_vacancys(self, *args, **kwargs):
+    def parse_vacansys(self, *args, **kwargs):
         raise NotImplementedError

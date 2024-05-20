@@ -1,35 +1,34 @@
 from .abstract_class import Parser
 from .vacancy import Vacancy
 
-
 class ParserVacancy(Parser):
-    def __init__(self, data: list):
+    def __init__(self, data: list, params: dict = {}):
         self.data = data
+        self.params = params
         self.list_instances = self.__creating_a_list_of_instances()
 
     def __repr__(self):
         return f'Data: {self.data}'
 
-    def get_vacancys(
-        self,
-        filter_words: list = None,
-        salary_from: int = None,
-        salary_to: int = None,
-        sort_salary_from: bool = False,
-        sort_salary_to: bool = False,
-        top_n: int = None
-    ) -> list[Vacancy]:
+    def parse_vacansys(self, params: dict) -> list[Vacancy]:
+        if params is not None:
+            self.params = params
         res = self.__creating_a_list_of_instances()
-        if filter_words is not None and len(filter_words) > 0:
-            res = self.__filter_vacancies(res, filter_words)
-        if salary_from is not None and salary_to is not None and salary_from < salary_to and salary_to > 0 and salary_from > 0:
+        if len(self.params.get("filter_words", [])) > 0:
+            res = self.__filter_vacancies(res, self.params.get("filter_words", ))
+        salary_from = self.params.get("salary_from", 0)
+        salary_to = self.params.get("salary_to", 0)   
+        if salary_from < salary_to and salary_to > 0 and salary_from > 0:
             res = self.__get_vacancies_by_salary(res, salary_from, salary_to)
-        if sort_salary_from:
+        if self.params.get("sort_salary_from"):
+            self.params["sort_salary_to"] = False
             res = self.__sort_vacancies_from(res)
-        if sort_salary_to:
+            print(res)
+        if self.params.get("sort_salary_to"):
+            self.params["sort_salary_to"] = False
             res = self.__sort_vacancies_to(res)
-        if top_n is not None and top_n > 0:
-            res = self.__get_top_vacancies(res, top_n)
+        if self.params.get("top_n", 0) > 0:
+            res = self.__get_top_vacancies(res, self.params.get("top_n"))
         return res
 
     def __filter_vacancies(self, data: list, filter_words: list) -> list[dict]:
