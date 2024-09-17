@@ -1,69 +1,288 @@
+import unittest
+import tempfile
+import os
 import json
-import pytest
+from unittest import mock
 from src.saver import JSONSaver
 
-@pytest.fixture
-def temp_json_file(tmp_path):
-    """
-    Создаёт временный JSON-файл для тестирования и удаляет его после использования.
-    """
-    temp_file = tmp_path / "temp_vacancies.json"
-    yield temp_file
-    if temp_file.exists():
-        temp_file.unlink()
 
-def test_save(temp_json_file):
-    saver = JSONSaver(path=temp_json_file)
-    data = [
-        {"id": 1, "name": "Vacancy 1"},
-        {"id": 2, "name": "Vacancy 2"},
-    ]
-    saver.save(data)
+class TestJSONSaver(unittest.TestCase):
+    def setUp(self):
+        # Создаем временную директорию и файл для тестов
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_file = os.path.join(self.temp_dir.name, 'vacancies.json')
+        # Инициализируем JSONSaver с временным путем
+        self.saver = JSONSaver(path=self.temp_file)
 
-    with open(temp_json_file, 'r', encoding='utf-8') as file:
-        saved_data = json.load(file)
-        file.close()
+    def tearDown(self):
+        # Закрываем временную директорию
+        self.temp_dir.cleanup()
 
-    assert saved_data == data
+    def test_save_single_vacancy(self):
+        # Сохраняем одну вакансию
+        vacancy = {
+            "name": "Python Developer",
+            "desc": "Develop Python applications",
+            "salary_from": 100000,
+            "salary_to": 150000,
+            "currency": "RUB",
+            "url": "https://hh.ru/vacancy/123456",
+            "requirement": "3+ years of experience"
+        }
+        self.saver.save({"items": [vacancy]})
 
-def test_delete(temp_json_file):
-    initial_data = [
-        {"id": 1, "name": "Vacancy 1"},
-        {"id": 2, "name": "Vacancy 2"},
-        {"id": 3, "name": "Vacancy 3"},
-    ]
+        # Проверяем, что вакансия сохранена
+        with open(self.temp_file, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            self.assertIn(vacancy, data["items"])
+            self.assertEqual(len(data["items"]), 1)
 
-    with open(temp_json_file, 'w', encoding='utf-8') as file:
-        json.dump(initial_data, file, ensure_ascii=False, indent=4)
+    def test_save_multiple_vacancies(self):
+        # Сохраняем несколько вакансий
+        vacancies = [
+            {
+                "name": "Python Developer",
+                "desc": "Develop Python applications",
+                "salary_from": 100000,
+                "salary_to": 150000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/123456",
+                "requirement": "3+ years of experience"
+            },
+            {
+                "name": "Senior Python Developer",
+                "desc": "Lead Python projects",
+                "salary_from": 150000,
+                "salary_to": 200000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/654321",
+                "requirement": "5+ years of experience"
+            }
+        ]
+        self.saver.save({"items": vacancies})
 
-    saver = JSONSaver(path=temp_json_file)
-    saver.delete(2)
+        # Проверяем, что вакансии сохранены
+        with open(self.temp_file, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            self.assertEqual(len(data["items"]), 2)
+            for vacancy in vacancies:
+                self.assertIn(vacancy, data["items"])
 
-    with open(temp_json_file, 'r', encoding='utf-8') as file:
-        data_after_delete = json.load(file)
-        file.close()
+    def test_save_duplicates(self):
+        # Сохраняем вакансию дважды и проверяем, что дубликаты не добавляются
+        vacancy = {
+            "name": "Python Developer",
+            "desc": "Develop Python applications",
+            "salary_from": 100000,
+            "salary_to": 150000,
+            "currency": "RUB",
+            "url": "https://hh.ru/vacancy/123456",
+            "requirement": "3+ years of experience"
+        }
+        self.saver.save({"items": [vacancy]})
+        self.saver.save({"items": [vacancy]})
 
-    expected_data = [
-        {"id": 1, "name": "Vacancy 1"},
-        {"id": 3, "name": "Vacancy 3"},
-    ]
+        # Проверяем, что вакансия сохранена только один раз
+        with open(self.temp_file, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            self.assertEqual(len(data["items"]), 1)
 
-    assert data_after_delete == expected_data
+    def test_get_vacancies_no_criteria(self):
+        # Сохраняем несколько вакансий
+        vacancies = [
+            {
+                "name": "Python Developer",
+                "desc": "Develop Python applications",
+                "salary_from": 100000,
+                "salary_to": 150000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/123456",
+                "requirement": "3+ years of experience"
+            },
+            {
+                "name": "Senior Python Developer",
+                "desc": "Lead Python projects",
+                "salary_from": 150000,
+                "salary_to": 200000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/654321",
+                "requirement": "5+ years of experience"
+            }
+        ]
+        self.saver.save({"items": vacancies})
 
-def test_delete_nonexistent_id(temp_json_file):
-    initial_data = [
-        {"id": 1, "name": "Vacancy 1"},
-        {"id": 2, "name": "Vacancy 2"},
-    ]
+        # Получаем все вакансии без фильтров
+        result = self.saver.get_vacancies()
+        self.assertEqual(len(result), 2)
+        for vacancy in vacancies:
+            self.assertIn(vacancy, result)
 
-    with open(temp_json_file, 'w', encoding='utf-8') as file:
-        json.dump(initial_data, file, ensure_ascii=False, indent=4)
+    def test_get_vacancies_with_name_filter(self):
+        # Сохраняем несколько вакансий
+        vacancies = [
+            {
+                "name": "Python Developer",
+                "desc": "Develop Python applications",
+                "salary_from": 100000,
+                "salary_to": 150000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/123456",
+                "requirement": "3+ years of experience"
+            },
+            {
+                "name": "Senior Python Developer",
+                "desc": "Lead Python projects",
+                "salary_from": 150000,
+                "salary_to": 200000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/654321",
+                "requirement": "5+ years of experience"
+            },
+            {
+                "name": "Java Developer",
+                "desc": "Develop Java applications",
+                "salary_from": 90000,
+                "salary_to": 140000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/111222",
+                "requirement": "2+ years of experience"
+            }
+        ]
+        self.saver.save({"items": vacancies})
 
-    saver = JSONSaver(path=temp_json_file)
-    saver.delete(3)
+        # Фильтруем вакансии по названию "Python Developer"
+        criteria = {"name": "Python Developer"}
+        result = self.saver.get_vacancies(criteria)
+        self.assertEqual(len(result), 2)
+        for vacancy in vacancies[:2]:
+            self.assertIn(vacancy, result)
 
-    with open(temp_json_file, 'r', encoding='utf-8') as file:
-        data_after_delete = json.load(file)
-        file.close()
+    def test_get_vacancies_with_salary_filter(self):
+        # Сохраняем несколько вакансий
+        vacancies = [
+            {
+                "name": "Junior Python Developer",
+                "desc": "Develop Python applications",
+                "salary_from": 80000,
+                "salary_to": 120000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/333444",
+                "requirement": "1+ years of experience"
+            },
+            {
+                "name": "Python Developer",
+                "desc": "Develop Python applications",
+                "salary_from": 100000,
+                "salary_to": 150000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/123456",
+                "requirement": "3+ years of experience"
+            },
+            {
+                "name": "Senior Python Developer",
+                "desc": "Lead Python projects",
+                "salary_from": 150000,
+                "salary_to": 200000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/654321",
+                "requirement": "5+ years of experience"
+            }
+        ]
+        self.saver.save({"items": vacancies})
 
-    assert data_after_delete == initial_data
+        # Фильтруем вакансии с зарплатой от 100000
+        criteria = {"salary_from": 100000}
+        result = self.saver.get_vacancies(criteria)
+        self.assertEqual(len(result), 2)
+        for vacancy in vacancies[1:]:
+            self.assertIn(vacancy, result)
+
+        # Фильтруем вакансии с зарплатой до 150000
+        criteria = {"salary_to": 150000}
+        result = self.saver.get_vacancies(criteria)
+        self.assertEqual(len(result), 2)
+        self.assertIn(vacancies[0], result)
+        self.assertIn(vacancies[1], result)
+
+    def test_delete_specific_vacancy(self):
+        # Сохраняем несколько вакансий
+        vacancies = [
+            {
+                "id": "123456",
+                "name": "Python Developer",
+                "desc": "Develop Python applications",
+                "salary_from": 100000,
+                "salary_to": 150000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/123456",
+                "requirement": "3+ years of experience"
+            },
+            {
+                "id": "654321",
+                "name": "Senior Python Developer",
+                "desc": "Lead Python projects",
+                "salary_from": 150000,
+                "salary_to": 200000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/654321",
+                "requirement": "5+ years of experience"
+            }
+        ]
+        self.saver.save({"items": vacancies})
+
+        # Удаляем вакансию с id "123456"
+        with mock.patch('builtins.print') as mocked_print:
+            self.saver.delete(record_id="123456")
+            mocked_print.assert_called_with(f'Вакансия с id 123456 удалена из {self.temp_file}.')
+
+        # Проверяем, что вакансия удалена
+        with open(self.temp_file, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            self.assertEqual(len(data["items"]), 1)
+            self.assertEqual(data["items"][0]["id"], "654321")
+
+        # Попытка удалить несуществующую вакансию
+        with mock.patch('builtins.print') as mocked_print:
+            self.saver.delete(record_id="000000")
+            mocked_print.assert_called_with(f'Вакансия с id 000000 не найдена в {self.temp_file}.')
+
+    def test_delete_all_vacancies(self):
+        # Сохраняем несколько вакансий
+        vacancies = [
+            {
+                "id": "123456",
+                "name": "Python Developer",
+                "desc": "Develop Python applications",
+                "salary_from": 100000,
+                "salary_to": 150000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/123456",
+                "requirement": "3+ years of experience"
+            },
+            {
+                "id": "654321",
+                "name": "Senior Python Developer",
+                "desc": "Lead Python projects",
+                "salary_from": 150000,
+                "salary_to": 200000,
+                "currency": "RUB",
+                "url": "https://hh.ru/vacancy/654321",
+                "requirement": "5+ years of experience"
+            }
+        ]
+        self.saver.save({"items": vacancies})
+
+        # Удаляем все вакансии
+        with mock.patch('builtins.print') as mocked_print:
+            self.saver.delete()
+            mocked_print.assert_called_with(f'Все вакансии удалены из {self.temp_file}.')
+
+        # Проверяем, что все вакансии удалены
+        with open(self.temp_file, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            self.assertEqual(len(data["items"]), 0)
+
+
+
+if __name__ == '__main__':
+    unittest.main()

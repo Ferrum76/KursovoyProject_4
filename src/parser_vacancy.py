@@ -1,239 +1,120 @@
-from .abstract_class import Parser
+from typing import List, Dict, Any, Optional
 from .vacancy import Vacancy
 
-class ParserVacancy(Parser):
-    def __init__(self, data: list, params: dict = {}):
-        self.data = data
-        self.params = params
-        self.list_instances = self.__creating_a_list_of_instances()
 
-    def __repr__(self):
-        return f'Data: {self.data}'
+class ParserVacancy:
+    """
+    Класс для парсинга данных вакансий из API HH.ru.
 
-    def parse_vacansys(self, params: dict = None) -> list[Vacancy]:
-        res = self.__creating_a_list_of_instances()
-        
-        if params is not None:
-            self.params = params
+    Attributes:
+        data (List[Dict[str, Any]]): Список вакансий в формате словарей.
+    """
 
-        if self.params is None:
-            return res
-        
-        filter_words = self.params.get("filter_words") if self.params.get("filter_words") else []
-        if len(filter_words) > 0:
-            res = self.__filter_vacancies(res, self.params.get("filter_words", ))
-        salary_from = self.params.get("salary_from", 0)
-        salary_to = self.params.get("salary_to", 0)   
-        if salary_from < salary_to and salary_to > 0 and salary_from > 0:
-            res = self.__get_vacancies_by_salary(res, salary_from, salary_to)
-        if self.params.get("sort_salary_from"):
-            self.params["sort_salary_to"] = False
-            res = self.__sort_vacancies_from(res)
-            print(res)
-        if self.params.get("sort_salary_to"):
-            self.params["sort_salary_to"] = False
-            res = self.__sort_vacancies_to(res)
-        if self.params.get("top_n", 0) > 0:
-            res = self.__get_top_vacancies(res, self.params.get("top_n"))
-        return res
-
-    def __filter_vacancies(self, data: list, filter_words: list) -> list[dict]:
+    def __init__(self, data: List[Dict[str, Any]]):
         """
-        Filters the list of vacancy instances based on the given filter words.
+        Инициализирует экземпляр ParserVacancy.
 
         Args:
-            filter_words (list): A list of words to filter the vacancy instances.
-
-        Returns:
-            list: A list of filtered vacancy instances.
-
-        This function iterates over each vacancy instance in the list and checks if any of the filter words are present in the instance's name. If a filter word is found, the instance is added to the `filter_vacancies` list. The `list_instances` attribute is then updated with the `filter_vacancies` list.
-
-        Example:
-            >>> parser = ParserVacancy([Vacancy("Python Developer", "Python developer needed", 100, 200, "https://example.com/vacancy1"), Vacancy("Java Developer", "Java developer needed", 200, 300, "https://example.com/vacancy2")])
-            >>> parser.__filter_vacancies(["Python"])
-            [Vacancy("Python Developer", "Python developer needed", 100, 200, "https://example.com/vacancy1")]
+            data (List[Dict[str, Any]]): Список вакансий в формате словарей.
         """
-        filter_vacancies = []
-        for instance in data:
-            for word in filter_words:
-                if word.lower().strip() in instance.name.lower():
-                    filter_vacancies.append(instance)
-                    break
-        return filter_vacancies
+        self.__data = data
 
-    def __get_vacancies_by_salary(self, data: list, salary_from: int, salary_to: int) -> list[dict]:
+    def parse_vacancies(self, params: Optional[Dict[str, Any]] = None) -> List[Vacancy]:
         """
-        Filters the list of vacancy instances based on the given salary range.
+        Парсит список вакансий и возвращает список экземпляров Vacancy с примененными фильтрами.
 
         Args:
-            salary_from (int): The minimum salary range.
-            salary_to (int): The maximum salary range.
+            params (Optional[Dict[str, Any]], optional): Словарь с фильтрами для применения.
+                                                         По умолчанию None.
 
         Returns:
-            list: A list of vacancy instances whose salary range falls within the given range.
-
-        This function iterates over each vacancy instance in the list and checks if the salary range of the instance falls within the given range. If the salary range is within the range, the instance is added to the `ranged_vacancies` list. Finally, the `list_instances` attribute is updated with the `ranged_vacancies` list.
-
-        Example:
-            >>> parser = ParserVacancy([Vacancy("Python Developer", "Python developer needed", 100, 200, "https://example.com/vacancy1"), Vacancy("Java Developer", "Java developer needed", 200, 300, "https://example.com/vacancy2")])
-            >>> parser.__get_vacancies_by_salary(150, 250)
-            [Vacancy("Python Developer", "Python developer needed", 100, 200, "https://example.com/vacancy1")]
+            List[Vacancy]: Список экземпляров Vacancy после применения фильтров.
 
         Raises:
-            ValueError: If the salary range is not valid.
+            Exception: Если происходит ошибка при парсинге.
         """
         try:
-            # Create an empty list to store the filtered vacancy instances
-            ranged_vacancies = []
-
-            # Iterate over each vacancy instance in the list
-            for instance in data:
-                # If the salary_from attribute is None, set it to 0
-                if instance.salary_from is None:
-                    instance.salary_from = 0
-
-                # If the salary_to attribute is None, set it to 0
-                if instance.salary_to is None:
-                    instance.salary_to = 0
-
-                # Check if the salary range of the instance falls within the given range
-                if salary_from <= instance.salary_from and salary_to >= instance.salary_to:
-                    # If the salary range is within the range, add the instance to the ranged_vacancies list
-                    ranged_vacancies.append(instance)
-
-            # Return the filtered list of vacancy instances
-            return ranged_vacancies
-        except ValueError:
-            print("Диапазон выбран некорректно")
-
-    def __sort_vacancies_from(self, data: list) -> list[dict]:
-        """
-        Sorts the list of vacancy instances in descending order based on the `salary_from` attribute.
-
-        Returns:
-            list[dict]: A sorted list of vacancy instances.
-
-        This function is used to sort the list of vacancy instances based on the `salary_from` attribute in descending order.
-        The sorted list is then updated in the `list_instances` attribute.
-
-        Example:
-            >>> parser = ParserVacancy([Vacancy("Python Developer", "Python developer needed", 100, 200, "https://example.com/vacancy1"), Vacancy("Java Developer", "Java developer needed", 200, 300, "https://example.com/vacancy2")])
-            >>> parser.__sort_vacancies_from()
-            [Vacancy("Java Developer", "Java developer needed", 200, 300, "https://example.com/vacancy2"), Vacancy("Python Developer", "Python developer needed", 100, 200, "https://example.com/vacancy1")]
-        """
-        if not data:
-            print("Список вакансий пуст", data)
-            return []
-        sorted_vacancies = sorted(
-            data, key=lambda x: x.salary_from, reverse=True)
-        return sorted_vacancies
-
-    def __sort_vacancies_to(self, data: list[dict]) -> list[dict]:
-        """
-        Sorts the list of vacancy instances in descending order based on the `salary_to` attribute.
-
-        Returns:
-            list[dict]: A sorted list of vacancy instances.
-
-        This function is used to sort the list of vacancy instances based on the `salary_to` attribute in descending order.
-        The sorted list is then updated in the `list_instances` attribute.
-
-        Example:
-            >>> parser = ParserVacancy([Vacancy("Python Developer", "Python developer needed", 200, 300, "https://example.com/vacancy1"), Vacancy("Java Developer", "Java developer needed", 100, 200, "https://example.com/vacancy2")])
-            >>> parser.__sort_vacancies_to()
-                [Vacancy("Java Developer", "Java developer needed", 100, 200, "https://example.com/vacancy2"), Vacancy("Python Developer", "Python developer needed", 200, 300, "https://example.com/vacancy1")]
-        """
-        sorted_vacancies = sorted(
-            data, key=lambda x: x.salary_to, reverse=True)
-        return sorted_vacancies
-
-    def __get_top_vacancies(self, data: list[dict], top_n: int) -> list[dict]:
-        """
-        Gets the top `top_n` vacancies from the list of instances and updates the list of instances with the top vacancies.
-
-        Parameters:
-            top_n (int): The number of top vacancies to retrieve.
-
-        Returns:
-            list[dict]: A list of top `top_n` vacancies.
-
-        Example:
-            >>> parser = ParserVacancy([Vacancy("Python Developer", "Python developer needed", 100, 200, "https://example.com/vacancy1"), Vacancy("Java Developer", "Java developer needed", 200, 300, "https://example.com/vacancy2"), Vacancy("JavaScript Developer", "JavaScript developer needed", 300, 400, "https://example.com/vacancy3")])
-            >>> parser.__get_top_vacancies(2)
-            [Vacancy("JavaScript Developer", "JavaScript developer needed", 300, 400, "https://example.com/vacancy3"), Vacancy("Java Developer", "Java developer needed", 200, 300, "https://example.com/vacancy2")]
-
-        """
-        print(data)
-        return data[:top_n]
-
-    def __creating_dictionary_list(self) -> list[dict]:
-        """
-        Creates a list of dictionaries containing information about vacancies.
-
-        Returns:
-            list[dict]: A list of dictionaries, where each dictionary represents a vacancy and contains the following keys:
-                - "name" (str): The name of the vacancy.
-                - "desc" (str): The description of the vacancy area.
-                - "salary_from" (int or None): The minimum salary of the vacancy.
-                - "salary_to" (int or None): The maximum salary of the vacancy.
-                - currency (str): The currency of the salary.
-                - "link" (str): The URL of the vacancy area.
-
-        Raises:
-            TypeError: If the data attribute is not a list.
-        """
-        if len(self.data) == 0:
-            return []
-        if isinstance(self.data, list):
-            vacancies_list = []
-            for item in self.data:
-                salary_from = item['salary'].get('from') if item['salary'] else 0
-                salary_to = item['salary'].get('to') if item['salary'] else 0
-                currency = item['salary'].get('currency') if item['salary'] else "RUB"
-                requirement = item['snippet'].get('requirement', 'Информация отсутствует') if item['snippet'] else 'Информация отсутствует'
-                vacancies_list.append({
-                    "name": item['name'],
-                    "desc": item['area']['name'],
-                    "salary_from": salary_from,
-                    "salary_to": salary_to,
-                    "currency": currency,
-                    "link": item['area']['url'],
-                    "requirement": requirement}
-                )
-
+            vacancies_list = self.__creating_vacancy_list()
+            # Применение фильтров, если они заданы
+            if params:
+                vacancies_list = self.__filter_vacancies(vacancies_list, params)
             return vacancies_list
-        else:
-            raise TypeError
+        except Exception as e:
+            raise Exception(f'Ошибка при парсинге данных: {e}')
 
-    def __creating_a_list_of_instances(self) -> list[Vacancy]:
+    def __creating_vacancy_list(self) -> List[Vacancy]:
         """
-        Creates a list of instances of the Vacancy class based on the data attribute.
+        Преобразует исходные данные в список экземпляров Vacancy с необходимыми полями.
 
         Returns:
-            list[Vacancy]: A list of Vacancy instances.
-
-        Raises:
-            TypeError: If the data attribute is not a list of dictionaries.
+            List[Vacancy]: Список экземпляров Vacancy.
         """
-        data = self.__creating_dictionary_list()
-        if len(data) == 0:
+        if not self.__data:
             return []
 
-        if isinstance(data, list):
-            vacancies_list = []
-            for item in data:
-                vacancy_ex = Vacancy(
-                    item["name"],
-                    item["desc"],
-                    item["salary_from"],
-                    item["salary_to"],
-                    item["currency"],
-                    item["link"],
-                    item["requirement"]
-                )
-                vacancies_list.append(vacancy_ex)
+        vacancies_list = []
+        for item in self.__data:
+            try:
+                salary = item.get('salary') or {}
+                snippet = item.get('snippet') or {}
+                area = item.get('area') or {}
 
-            return vacancies_list
-        else:
-            raise TypeError
+                vacancy = Vacancy(
+                    name=item.get('name', 'Без названия'),
+                    desc=area.get('name', 'Без описания'),
+                    salary_from=salary.get('from'),
+                    salary_to=salary.get('to'),
+                    currency=salary.get('currency', "RUB"),
+                    url=item.get('url', 'alternate_url'),
+                    requirement=snippet.get('requirement', 'Информация отсутствует')
+                )
+                vacancies_list.append(vacancy)
+            except AttributeError as e:
+                print(f"Ошибка обработки элемента: {e}, данные элемента: {item}")
+                continue
+            except Exception as e:
+                print(f"Неизвестная ошибка при обработке элемента: {e}, данные элемента: {item}")
+                continue
+
+        print(f'Всего вакансий после парсинга: {len(vacancies_list)}')
+        return vacancies_list
+
+    def __filter_vacancies(self, data: List[Vacancy], filter_params: Dict[str, Any]) -> List[Vacancy]:
+        """
+        Применяет фильтры к списку вакансий.
+
+        Args:
+            data (List[Vacancy]): Список вакансий для фильтрации.
+            filter_params (Dict[str, Any]): Словарь с фильтрами.
+
+        Returns:
+            List[Vacancy]: Отфильтрованный список вакансий.
+        """
+        filtered = data
+
+        # Фильтр по имени
+        if 'name' in filter_params:
+            filtered = [vac for vac in filtered if filter_params['name'].lower() in vac.name.lower()]
+
+        # Фильтр по зарплате от
+        if 'salary_from' in filter_params:
+            filtered = [vac for vac in filtered if vac.salary_from and vac.salary_from >= filter_params['salary_from']]
+
+        # Фильтр по зарплате до
+        if 'salary_to' in filter_params:
+            filtered = [vac for vac in filtered if vac.salary_to and vac.salary_to <= filter_params['salary_to']]
+
+        # Сортировка по зарплате от
+        if filter_params.get('sorted_salary_from'):
+            filtered.sort(key=lambda x: x.salary_from or 0, reverse=True)
+
+        # Сортировка по зарплате до
+        if filter_params.get('sorted_salary_to'):
+            filtered.sort(key=lambda x: x.salary_to or 0, reverse=True)
+
+        # Топ N вакансий
+        if 'top_n' in filter_params:
+            top_n = filter_params['top_n']
+            filtered = filtered[:top_n]
+
+        return filtered

@@ -4,99 +4,176 @@ from src.saver import JSONSaver
 import src.utils as utils
 
 
-def interface():
-    """Функция для взаимодействия с пользователем"""
+def print_vacancies(vacancies: list) -> None:
+    """
+    Печатает список вакансий в удобочитаемом формате.
 
-    print('Добро пожаловать в интерактивный поиск вакансий на сайте hh.ru \n')
-    print('Для получения доступных команд введите help \n')
+    Args:
+        vacancies (list): Список вакансий для отображения.
+    """
+    if not vacancies:
+        print("Нет вакансий, соответствующих заданным критериям.")
+        return
+
+    for idx, vacancy in enumerate(vacancies, start=1):
+        print(f"\n{idx}. {vacancy['name']}")
+        print(f"   Описание: {vacancy['desc']}")
+        if vacancy.get('salary_from') or vacancy.get('salary_to'):
+            salary = vacancy.get('salary_from')
+            salary_to = vacancy.get('salary_to')
+            currency = vacancy.get('currency', 'RUB')
+            if salary and salary_to:
+                print(f"   Зарплата: {salary} - {salary_to} {currency}")
+            elif salary:
+                print(f"   Зарплата: От {salary} {currency}")
+            elif salary_to:
+                print(f"   Зарплата: До {salary_to} {currency}")
+        else:
+            print("   Зарплата: Не указана")
+        print(f"   Требования: {vacancy.get('requirement')}")
+        print(f"   Ссылка: {vacancy.get('url')}")
+
+
+def interface() -> None:
+    """
+    Функция для взаимодействия с пользователем через консоль.
+    Позволяет искать вакансии, применять фильтры и сохранять результаты.
+    """
+    print('Добро пожаловать в интерактивный поиск вакансий на сайте hh.ru')
 
     while True:
-        cmd = input(utils.menu())
-        if cmd == 'help' or cmd == '1':
-            cmd = input(utils.menu())
+        try:
+            cmd = input(utils.menu()).strip().lower()
 
-        if cmd == 'search' or cmd == '2':
-            user_vacancy = input(
-                'Введите вакансию для поиска на сайте hh.ru: \n')
-            hh = FromHHru()
-            vacancies = hh.get_vacancies(user_vacancy)
+            if cmd in ['help', '1']:
+                print('Вызов списка команд.')
+                print(utils.menu())
+                continue
 
-            pv = ParserVacancy(data=vacancies)
-            parse_vacansy = pv.parse_vacansys()
-            saver = JSONSaver()
-            res = {"items": parse_vacansy}
-            saver = saver.save(res)
+            elif cmd in ['search', '2']:
+                user_vacancy = input('Введите вакансию для поиска на сайте hh.ru: ').strip()
+                if not user_vacancy:
+                    continue
 
-            print(f'Найдено: {len(parse_vacansy)} вакансий по запросу "{user_vacancy}" и сохранено в файл вакансий в {saver.get_path()}')
+                # Инициализация компонентов
+                hh = FromHHru()
+                vacancies_data = hh.get_vacancies(keyword=user_vacancy, max_pages=None)
+                hh.close_session()
 
-            b = input('Требуется ли добавить фильтры к вакансиям да/нет: \n')
+                pv = ParserVacancy(data=vacancies_data)
+                parse_vacancies = pv.parse_vacancies()
 
-            if b == 'да':
-                while True:
+                saver = JSONSaver(path='data/vacancies.json')
+                res = {"items": [vacancy.to_dict() for vacancy in parse_vacancies]}
+                saver.save(res)
+
+                print(f'Найдено: {len(parse_vacancies)} вакансий по запросу "{user_vacancy}" и сохранено в файл вакансий в {saver.get_path()}')
+
+                # Запрос на добавление фильтров
+                add_filters = input('Требуется ли добавить фильтры к вакансиям? (да/нет): ').strip().lower()
+                if add_filters == 'да':
                     params = {}
+                    while True:
+                        sub_cmd = input(utils.get_info_commands_criteria()).strip().lower()
 
-                    sub_cmd = input(utils.get_info_commands_criteria())
+                        if sub_cmd in ['stop', '11']:
+                            break
 
-                    if sub_cmd == 'stop' or sub_cmd == '11':
-                        break
+                        elif sub_cmd in ['help', '1']:
+                            print(utils.get_info_commands_criteria())
+                            continue
 
-                    if sub_cmd == 'help' or sub_cmd == '1':
-                        sub_cmd = input(utils.get_info_commands_criteria())
+                        elif sub_cmd in ['name', '2']:
+                            name_vac = input('Введите название вакансии: ').strip()
+                            if name_vac and name_vac != '':
+                                params['name'] = name_vac
+                                print(f'Добавлен фильтр: {utils.PARAMS_ADDED["name"]} = {name_vac}')
+                            else:
+                                print('Название вакансии не может быть пустым.')
 
-                    if sub_cmd == 'name' or sub_cmd == '2':
-                        name_vac = input('Введите название вакансии: \n')
-                        params['name'] = name_vac
-                        utils.get_params_info_commands_criteria(params)
+                        elif sub_cmd in ['salary_from', '3']:
+                            salary_from = input('Введите зарплату от: ').strip()
+                            if salary_from.isdigit() and int(salary_from) >= 0:
+                                params['salary_from'] = int(salary_from)
+                                print(f'Добавлен фильтр: {utils.PARAMS_ADDED["salary_from"]} = {salary_from}')
+                            else:
+                                print('Зарплата от должна быть неотрицательным числом.')
 
-                    if sub_cmd == 'salary_from' or sub_cmd == '3':
-                        salary_from = input('Введите зарплату от: \n')
-                        params['salary_from'] = salary_from
-                        utils.get_params_info_commands_criteria(params)
+                        elif sub_cmd in ['salary_to', '4']:
+                            salary_to = input('Введите зарплату до: ').strip()
+                            if salary_to.isdigit() and int(salary_to) >= 0:
+                                params['salary_to'] = int(salary_to)
+                                print(f'Добавлен фильтр: {utils.PARAMS_ADDED["salary_to"]} = {salary_to}')
+                            else:
+                                print('Зарплата до должна быть неотрицательным числом.')
 
-                    if sub_cmd == 'salary_to' or sub_cmd == '4':
-                        salary_to = input('Введите зарплату до: \n')
-                        params['salary_to'] = salary_to
-                        utils.get_params_info_commands_criteria(params)
+                        elif sub_cmd in ['sorted_salary_from', '5']:
+                            params['sorted_salary_from'] = True
+                            print(f'Добавлен фильтр: {utils.PARAMS_ADDED["sorted_salary_from"]}')
 
-                    if sub_cmd == 'sorted_salary_from' or sub_cmd == '5':
-                        params['sorted_salary_from'] = True
-                        utils.get_params_info_commands_criteria(params)
+                        elif sub_cmd in ['sorted_salary_to', '6']:
+                            params['sorted_salary_to'] = True
+                            print(f'Добавлен фильтр: {utils.PARAMS_ADDED["sorted_salary_to"]}')
 
-                    if sub_cmd == 'sorted_salary_to' or sub_cmd == '6':
-                        params['sorted_salary_to'] = True
-                        utils.get_params_info_commands_criteria(params)
+                        elif sub_cmd in ['top_n', '7']:
+                            top_n = input('Введите топ N вакансий: ').strip()
+                            if top_n.isdigit() and int(top_n) > 0:
+                                params['top_n'] = int(top_n)
+                                print(f'Добавлен фильтр: {utils.PARAMS_ADDED["top_n"]} = {top_n}')
+                            else:
+                                print('Топ N вакансий должно быть положительным числом.')
 
-                    if sub_cmd == 'top_n' or sub_cmd == '7':
-                        top_n = input('Введите топ N вакансий: \n')
-                        params['top_n'] = top_n
-                        utils.get_params_info_commands_criteria(params)
+                        elif sub_cmd in ['add', '8']:
+                            if not params:
+                                print('Нет добавленных фильтров для применения.')
+                                continue
+                            parse_vacancies = pv.parse_vacancies(params=params)
+                            saver.delete()
+                            res['items'] = [vacancy.to_dict() for vacancy in parse_vacancies]
+                            saver.save(res)
+                            print(f'Фильтры применены. Найдено: {len(parse_vacancies)} вакансий и сохранено в файл вакансий в {saver.get_path()}')
+                            print('Фильтры добавлены и применены к вакансиям.')
+                            break
 
-                    if sub_cmd == 'add' or sub_cmd == '8':
-                        parse_vacansy = pv.parse_vacansys(params)
-                        print("Фильтры добавлены применены к вакансиям")
-                        res['items'] = parse_vacansy
-                        saver.save(res)
-                        print(f'Найдено: {len(parse_vacansy)} вакансий по запросу "{user_vacancy}" и сохранено в файл вакансий в {saver.get_path()}')
-                        sub_cmd = 'clear'
+                        elif sub_cmd in ['done', '9']:
+                            print('Применение текущих фильтров.')
+                            break
 
-                    if sub_cmd == 'done' or sub_cmd == '9':
-                        break
+                        elif sub_cmd in ['clear', '10']:
+                            params.clear()
+                            print('Фильтры очищены.')
+                            print('Фильтры очищены.')
 
-                    if sub_cmd == 'clear' or sub_cmd == '10':
-                        params = {}
-                        print('Фильтры очищены')
-                        sub_cmd = input(utils.get_info_commands_criteria())
+                        else:
+                            print('Неизвестная команда. Введите "help" для списка доступных команд.')
 
-            name_exit = input('Хотите очистить файл вакансий да/нет: \n')
+                        # Отображение текущих добавленных фильтров
+                        if params:
+                            print(utils.get_params_info_commands_criteria(params))
+                        else:
+                            print('\tНет добавленных критериев.')
 
-            if name_exit == 'да' or name_exit == 'yes' or name_exit == 'y' or name_exit == 'Y':
-                saver.delete()
-                print('Файл вакансий очищен')
-                cmd = input(utils.menu())
 
-        if cmd == 'exit' or cmd == '3':
-            print(
-                'До свидания, спасибо за использование интерактивного поиска вакансий на сайте hh.ru')
-            break
 
-interface()
+                # Запрос на очистку файла вакансий
+                name_exit = input('Хотите очистить файл вакансий? (да/нет): ').strip().lower()
+                if name_exit in ['да', 'yes', 'y']:
+                    saver.delete()
+                    print('Файл вакансий очищен')
+                    print('Файл вакансий очищен.')
+
+            elif cmd in ['exit', '3']:
+                print('До свидания, спасибо за использование интерактивного поиска вакансий на сайте hh.ru')
+                print('Пользователь завершил работу программы.')
+                break
+
+            else:
+                print('Неизвестная команда. Введите "help" для списка доступных команд.')
+                print('Неизвестная команда. Введите "help" для списка доступных команд.')
+
+        except Exception as e:
+            print(f'Произошла ошибка: {e}')
+
+
+if __name__ == "__main__":
+    interface()

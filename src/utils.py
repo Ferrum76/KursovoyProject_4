@@ -1,46 +1,70 @@
-from src.vacancy import Vacancy
-from src.parser_vacancy import ParserVacancy
+from typing import Dict, Any
 
-CRITERIA_COMMAND = {
-    1: 'help - вызвать список критерий',
-    2: 'name - поиск вакансий по имени',
-    3: 'salary_from - зарплата от',
-    4: 'salary_to - зарплата до',
-    5: 'sorted_salary_from - сортировка по зарплате от',
-    6: 'sorted_salary_to - сортировка по зарплате до',
-    7: 'top_n - топ N вакансий',
-    8: 'add - добавить фильтры',
-    9: 'done - применить фильтры',
-    10: 'clear - очистить фильтры',
-    11:' stop - выйти и отменить фильтры',
-}
 
 PARAMS_ADDED = {
-    'name': 'Название вакансии',
-    'salary_from': 'Зарплата от',
-    'salary_to': 'Зарплата до',
-    'sorted_salary_from': 'Сортировка по зарплате от',
-    'sorted_salary_to': 'Сортировка по зарплате до',
-    'top_n': 'Топ N вакансий',
-    'add': 'Добавить критерии поиска',
-    'done': 'Применить критерии поиска',
-    'clear': 'Очистить критерии поиска',
+    "name": "Название вакансии",
+    "salary_from": "Зарплата от",
+    "salary_to": "Зарплата до",
+    "sorted_salary_from": "Сортировка по зарплате от",
+    "sorted_salary_to": "Сортировка по зарплате до",
+    "top_n": "Топ N вакансий"
 }
 
-def menu():
-    message = 'Доступные команды:\n1. help - вызвать список команд\n2. search - поиск вакансий\n3. exit - выход из программы\n'
-    return message
 
-def get_info_commands_criteria():
-    print('Доступные критерии поиска:')
-    message =  [message for message in CRITERIA_COMMAND.values()]
-    return '\n'.join(message)
+def menu() -> str:
+    """
+    Возвращает строку меню для взаимодействия с пользователем.
 
-def get_params_info_commands_criteria(params: dict):
-    print('Добавлены следующие критерии поиска:')
-    count = 0
-    message = []
-    for p in params.values():
-        count += 1
-        message.append(f'\t{count}: {p}')
-    return '\n'.join(message)
+    Returns:
+        str: Строка меню.
+    """
+    return (
+        "\nДоступные команды:\n"
+        "1. help - помощь\n"
+        "2. search - поиск вакансий\n"
+        "3. exit - выход\n"
+        "Введите команду: "
+    )
+
+
+def get_info_commands_criteria() -> str:
+    """
+    Возвращает строку с критериями фильтрации вакансий.
+
+    Returns:
+        str: Строка с критериями фильтрации.
+    """
+    return (
+        "\nДоступные критерии фильтрации:\n"
+        "1. help - показать критерии\n"
+        "2. name - название вакансии\n"
+        "3. salary_from - зарплата от\n"
+        "4. salary_to - зарплата до\n"
+        "5. sorted_salary_from - сортировка по зарплате от\n"
+        "6. sorted_salary_to - сортировка по зарплате до\n"
+        "7. top_n - топ N вакансий\n"
+        "8. add - применить фильтры\n"
+        "9. done - завершить добавление фильтров\n"
+        "10. clear - очистить фильтры\n"
+        "11. stop - отменить добавление фильтров\n"
+        "Введите критерий: "
+    )
+
+
+def get_params_info_commands_criteria(params: Dict[str, Any]) -> str:
+    """
+    Возвращает строку с текущими примененными фильтрами.
+
+    Args:
+        params (Dict[str, Any]): Словарь с текущими фильтрами.
+
+    Returns:
+        str: Строка с текущими фильтрами.
+    """
+    info = "Текущие фильтры:\n"
+    for key, value in params.items():
+        if isinstance(value, bool):
+            info += f"\t{PARAMS_ADDED.get(key, key)}\n"
+        else:
+            info += f"\t{PARAMS_ADDED.get(key, key)}: {value}\n"
+    return info
