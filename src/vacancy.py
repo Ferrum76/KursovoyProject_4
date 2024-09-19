@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
-@dataclass(order=True)
+@dataclass
 class Vacancy:
     """
     Представляет вакансию в системе HH.ru.
@@ -74,3 +74,43 @@ class Vacancy:
             "url": self.url,
             "requirement": self.requirement
         }
+
+    def average_salary(self) -> Optional[float]:
+        """
+        Вычисляет среднее значение зарплаты.
+
+        Returns:
+            Optional[float]: Среднее значение зарплаты или None, если зарплата не указана.
+        """
+        if self.salary_from is not None and self.salary_to is not None:
+            return (self.salary_from + self.salary_to) / 2
+        elif self.salary_from is not None:
+            return float(self.salary_from)
+        elif self.salary_to is not None:
+            return float(self.salary_to)
+        return None
+
+    def __eq__(self, other):
+        if not isinstance(other, Vacancy):
+            return NotImplemented
+        return self.average_salary() == other.average_salary()
+
+    def __lt__(self, other):
+        if not isinstance(other, Vacancy):
+            return NotImplemented
+        return (self.average_salary() or 0) < (other.average_salary() or 0)
+
+    def __le__(self, other):
+        if not isinstance(other, Vacancy):
+            return NotImplemented
+        return self < other or self == other
+
+    def __gt__(self, other):
+        if not isinstance(other, Vacancy):
+            return NotImplemented
+        return not self <= other
+
+    def __ge__(self, other):
+        if not isinstance(other, Vacancy):
+            return NotImplemented
+        return not self < other

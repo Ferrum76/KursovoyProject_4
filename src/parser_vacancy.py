@@ -112,6 +112,14 @@ class ParserVacancy:
         if filter_params.get('sorted_salary_to'):
             filtered.sort(key=lambda x: x.salary_to or 0, reverse=True)
 
+        # Сортировка по средней зарплате (по возрастанию)
+        if filter_params.get('sorted_avg_salary_asc'):
+            filtered = sorted(filtered)
+
+        # Сортировка по средней зарплате (по убыванию)
+        if filter_params.get('sorted_avg_salary_desc'):
+            filtered = sorted(filtered, reverse=True)
+
         # Топ N вакансий
         if 'top_n' in filter_params:
             top_n = filter_params['top_n']

@@ -201,6 +201,30 @@ class TestParserVacancy(unittest.TestCase):
         result = self.parser.parse_vacancies(params=params)
         self.assertEqual(len(result), 2)
 
+    def test_parse_vacansies_with_avg_salary_asc(self):
+        """
+        Тестирует метод parse_vacancies() с вычислением средней зарплаты вакансий.
+        """
+        params = {"sorted_avg_salary_asc": True}
+        result = self.parser.parse_vacancies(params=params)
+        self.assertEqual(len(result), 4)
+        self.assertEqual(result[0].salary_to, None)
+        self.assertEqual(result[1].salary_to, 140000)
+        self.assertEqual(result[2].salary_to, 150000)
+        self.assertEqual(result[3].salary_to, 200000)
+
+    def test_parse_vacansies_with_avg_salary_desc(self):
+        """
+        Тестирует метод parse_vacancies() с вычислением средней зарплаты вакансий.
+        """
+        params = {"sorted_avg_salary_desc": True}
+        result = self.parser.parse_vacancies(params=params)
+        self.assertEqual(len(result), 4)
+        self.assertEqual(result[0].salary_to, 200000)
+        self.assertEqual(result[1].salary_to, 150000)
+        self.assertEqual(result[2].salary_to, 140000)
+        self.assertEqual(result[3].salary_to, None)
+
     def test_parse_vacancies_with_multiple_filters(self):
         """
         Тестирует метод parse_vacancies() с несколькими фильтрами одновременно.

@@ -115,7 +115,15 @@ def interface() -> None:
                             params['sorted_salary_to'] = True
                             print(f'Добавлен фильтр: {utils.PARAMS_ADDED["sorted_salary_to"]}')
 
-                        elif sub_cmd in ['top_n', '7']:
+                        elif sub_cmd in ['sorted_avg_salary_asc', '7']:
+                            params['sorted_avg_salary_asc'] = True
+                            print(f'Добавлен фильтр: {utils.PARAMS_ADDED["sorted_avg_salary_asc"]}')
+
+                        elif sub_cmd in ['sorted_avg_salary_desc', '8']:
+                            params['sorted_avg_salary_desc'] = True
+                            print(f'Добавлен фильтр: {utils.PARAMS_ADDED["sorted_avg_salary_desc"]}')
+
+                        elif sub_cmd in ['top_n', '9']:
                             top_n = input('Введите топ N вакансий: ').strip()
                             if top_n.isdigit() and int(top_n) > 0:
                                 params['top_n'] = int(top_n)
@@ -123,7 +131,7 @@ def interface() -> None:
                             else:
                                 print('Топ N вакансий должно быть положительным числом.')
 
-                        elif sub_cmd in ['add', '8']:
+                        elif sub_cmd in ['add', '10']:
                             if not params:
                                 print('Нет добавленных фильтров для применения.')
                                 continue
@@ -135,11 +143,11 @@ def interface() -> None:
                             print('Фильтры добавлены и применены к вакансиям.')
                             break
 
-                        elif sub_cmd in ['done', '9']:
+                        elif sub_cmd in ['done', '11']:
                             print('Применение текущих фильтров.')
                             break
 
-                        elif sub_cmd in ['clear', '10']:
+                        elif sub_cmd in ['clear', '12']:
                             params.clear()
                             print('Фильтры очищены.')
                             print('Фильтры очищены.')
